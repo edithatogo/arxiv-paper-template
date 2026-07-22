@@ -1,4 +1,4 @@
-# Bleeding-edge arXiv LaTeX template
+# arXiv LaTeX template
 
 A reproducible, source-audited template for preparing research manuscripts for
 arXiv and later journal submission. The default path is plain Markdown to
