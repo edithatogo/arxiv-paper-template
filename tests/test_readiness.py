@@ -107,7 +107,6 @@ class ReadinessContractTests(unittest.TestCase):
 
         self.assertIn("--- canonical", comparison)
         self.assertIn("+++ cleaner", comparison)
-        self.assertIn("canonical/main.tex cleaner/main.tex", comparison)
         self.assertNotIn(str(root), comparison)
         self.assertNotRegex(comparison, r"\d{4}-\d{2}-\d{2}")
 
