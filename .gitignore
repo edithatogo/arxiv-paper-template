@@ -1,0 +1,13 @@
+.venv/
+build/
+__pycache__/
+.sourceright/
+*.aux
+*.bbl
+*.bcf
+*.blg
+*.fdb_latexmk
+*.fls
+*.log
+*.out
+*.run.xml

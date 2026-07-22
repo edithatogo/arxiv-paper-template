@@ -1,0 +1,13 @@
+{
+  "schema_version": "arxiv-paper-template.readiness.v1",
+  "required_tools": ["pandoc", "pdflatex", "latexmk"],
+  "optional_tools": ["arxiv-latex-cleaner", "arxiv-collector", "latexpand", "qpdf", "pdfinfo", "exiftool", "gitleaks", "lychee", "vale"],
+  "source_provenance": {"sourceright": "submodule", "authentext": "submodule"},
+  "human_gates": [
+    "confirm authorship, affiliations, ORCID, funding, and conflicts",
+    "select the arXiv category, license, and endorsement path",
+    "review the final source package and PDF",
+    "perform the authenticated arXiv upload"
+  ],
+  "submission_performed": false
+}
