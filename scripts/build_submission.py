@@ -1,53 +1,50 @@
 #!/usr/bin/env python3
-"""Build a non-submitting arXiv source package."""
+"""Compile canonical LaTeX and create a deterministic, non-submitting archive."""
 from __future__ import annotations
 
-import hashlib
 import gzip
+import hashlib
 import json
+import os
 import shutil
 import subprocess
 import sys
 import tarfile
-import os
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+PAPER = ROOT / "paper"
 BUILD = ROOT / "build" / "arxiv"
 PACKAGE = BUILD / "package"
+SOURCE_SUFFIXES = {".tex", ".bib", ".bbl", ".cls", ".sty", ".bst", ".png", ".jpg", ".jpeg", ".pdf", ".eps", ".ps"}
 
 
-def run(command: list[str]) -> None:
-    subprocess.run(command, cwd=ROOT, check=True)
+def run(command: list[str], *, cwd: Path = ROOT) -> None:
+    subprocess.run(command, cwd=cwd, check=True)
 
 
-def main() -> None:
-    if "--clean" in sys.argv:
-        shutil.rmtree(BUILD, ignore_errors=True)
-        return
-    BUILD.mkdir(parents=True, exist_ok=True)
-    os.environ.setdefault("SOURCE_DATE_EPOCH", "0")
-    shutil.rmtree(PACKAGE, ignore_errors=True)
-    PACKAGE.mkdir()
-    for tool in ("pandoc", "pdflatex", "latexmk"):
-        if shutil.which(tool) is None:
-            raise SystemExit(f"missing required tool: {tool}")
-    tex = BUILD / "main.tex"
-    pdf = BUILD / "main.pdf"
-    run(["pandoc", "paper/main.md", "--from", "markdown", "--to", "latex", "--standalone", "--citeproc", "--bibliography=paper/references.bib", "--output", str(tex)])
-    run(["latexmk", "-r", "paper/latexmkrc", "-outdir=" + str(BUILD), str(tex)])
-    shutil.copy2(tex, PACKAGE / "main.tex")
-    shutil.copy2(pdf, PACKAGE / "main.pdf")
-    shutil.copy2(ROOT / "paper/references.bib", PACKAGE / "references.bib")
-    shutil.copy2(ROOT / "paper/readiness-manifest.json", PACKAGE / "readiness-manifest.json")
+def copy_sources() -> None:
+    for source in sorted(PAPER.rglob("*")):
+        if source.is_file() and source.suffix.lower() in SOURCE_SUFFIXES:
+            destination = PACKAGE / source.relative_to(PAPER)
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(source, destination)
+    generated_bbl = BUILD / "main.bbl"
+    if generated_bbl.exists():
+        shutil.copy2(generated_bbl, PACKAGE / "main.bbl")
+
+
+def deterministic_archive(epoch: int) -> tuple[Path, str]:
     archive = BUILD / "arxiv-source.tar.gz"
     archive.unlink(missing_ok=True)
     with archive.open("wb") as raw:
-        with gzip.GzipFile(fileobj=raw, mode="wb", compresslevel=9, mtime=int(os.environ["SOURCE_DATE_EPOCH"])) as compressed:
+        with gzip.GzipFile(fileobj=raw, mode="wb", compresslevel=9, mtime=epoch) as compressed:
             with tarfile.open(fileobj=compressed, mode="w") as tar:
-                for path in sorted(PACKAGE.iterdir()):
-                    info = tar.gettarinfo(path, arcname=path.name)
-                    info.mtime = int(os.environ["SOURCE_DATE_EPOCH"])
+                for path in sorted(PACKAGE.rglob("*")):
+                    info = tar.gettarinfo(path, arcname=str(path.relative_to(PACKAGE)))
+                    info.mtime = epoch
+                    info.uid = info.gid = 0
+                    info.uname = info.gname = ""
                     if path.is_file():
                         with path.open("rb") as source:
                             tar.addfile(info, source)
@@ -55,7 +52,35 @@ def main() -> None:
                         tar.addfile(info)
     digest = hashlib.sha256(archive.read_bytes()).hexdigest()
     (BUILD / "arxiv-source.tar.gz.sha256").write_text(f"{digest}  {archive.name}\n")
-    report = {"schema_version": "arxiv-paper-template.readiness.v1", "status": "ready_for_human_review", "archive": str(archive.relative_to(ROOT)), "sha256": digest, "submission_performed": False, "human_gates": json.loads((ROOT / "paper/readiness-manifest.json").read_text())["human_gates"]}
+    return archive, digest
+
+
+def main() -> None:
+    if "--clean" in sys.argv:
+        shutil.rmtree(BUILD, ignore_errors=True)
+        return
+    for tool in ("pdflatex", "latexmk"):
+        if shutil.which(tool) is None:
+            raise SystemExit(f"missing required tool: {tool}")
+    shutil.rmtree(BUILD, ignore_errors=True)
+    PACKAGE.mkdir(parents=True)
+    epoch = int(os.environ.get("SOURCE_DATE_EPOCH", "0"))
+    os.environ["SOURCE_DATE_EPOCH"] = str(epoch)
+    run(["latexmk", f"-outdir={BUILD}", "main.tex"], cwd=PAPER)
+    copy_sources()
+    run([sys.executable, str(ROOT / "scripts" / "validate_arxiv.py"), str(PACKAGE)])
+    archive, digest = deterministic_archive(epoch)
+    manifest = json.loads((PAPER / "readiness-manifest.json").read_text())
+    report = {
+        "schema_version": "arxiv-paper-template.readiness.v2",
+        "status": "ready_for_human_review",
+        "top_level_tex": "main.tex",
+        "preview_pdf": str((BUILD / "main.pdf").relative_to(ROOT)),
+        "archive": str(archive.relative_to(ROOT)),
+        "sha256": digest,
+        "submission_performed": False,
+        "human_gates": manifest["human_gates"],
+    }
     (BUILD / "readiness.json").write_text(json.dumps(report, indent=2) + "\n")
     print(json.dumps(report, indent=2))
 

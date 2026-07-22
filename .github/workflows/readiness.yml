@@ -20,11 +20,20 @@ jobs:
           persist-credentials: false
       - uses: astral-sh/setup-uv@11f9893b081a58869d3b5fccaea48c9e9e46f990 # v8.3.2
       - name: Install LaTeX and arXiv source tools
-        run: sudo apt-get update && sudo apt-get install --yes pandoc latexmk texlive-latex-base texlive-latex-extra qpdf poppler-utils exiftool
+        run: sudo apt-get update && sudo apt-get install --yes latexmk texlive-latex-base texlive-latex-extra qpdf poppler-utils exiftool
       - name: Validate manifest
         run: python3 scripts/validate_manifest.py
+      - name: Install pinned comparison tools
+        run: uv venv --allow-existing && uv pip sync requirements-arxiv.txt
       - name: Build source package
         run: python3 scripts/build_submission.py
+      - name: Rebuild to prove deterministic packaging
+        run: |
+          cp build/arxiv/arxiv-source.tar.gz /tmp/arxiv-source-first.tar.gz
+          python3 scripts/build_submission.py
+          cmp /tmp/arxiv-source-first.tar.gz build/arxiv/arxiv-source.tar.gz
+      - name: Build and validate cleaner and collector variants
+        run: make arxiv-variants
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: arxiv-source-package

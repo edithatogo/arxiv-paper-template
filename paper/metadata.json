@@ -1,0 +1,14 @@
+{
+  "title": "Replace with the manuscript title",
+  "authors": [
+    {
+      "name": "Author One",
+      "orcid": "0000-0000-0000-0000",
+      "affiliation": "Institution"
+    }
+  ],
+  "abstract": "Replace with the final plain-text arXiv abstract.",
+  "categories": ["replace.with-category"],
+  "license": "select-in-arxiv-portal",
+  "comments": "Replace with page and figure counts after final build."
+}
