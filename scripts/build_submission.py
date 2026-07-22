@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Compile canonical LaTeX and create a deterministic, non-submitting archive."""
+
 from __future__ import annotations
 
 import gzip
@@ -9,22 +10,41 @@ import os
 import shutil
 import subprocess
 import sys
-import tarfile
 from pathlib import Path
+import tarfile
 
 ROOT = Path(__file__).resolve().parents[1]
 PAPER = ROOT / "paper"
 BUILD = ROOT / "build" / "arxiv"
 PACKAGE = BUILD / "package"
-SOURCE_SUFFIXES = {".tex", ".bib", ".bbl", ".cls", ".sty", ".bst", ".png", ".jpg", ".jpeg", ".pdf", ".eps", ".ps"}
+SOURCE_SUFFIXES = {
+    ".tex",
+    ".bib",
+    ".bbl",
+    ".cls",
+    ".sty",
+    ".bst",
+    ".png",
+    ".jpg",
+    ".jpeg",
+    ".pdf",
+    ".eps",
+    ".ps",
+}
 
 
 def run(command: list[str], *, cwd: Path = ROOT) -> None:
+    """Run a required build command."""
     subprocess.run(command, cwd=cwd, check=True)
 
 
 def copy_sources() -> None:
+    """Copy only arXiv-compatible authored source and referenced assets."""
     for source in sorted(PAPER.rglob("*")):
+        if source.is_symlink():
+            raise SystemExit(
+                f"symbolic links are not permitted in source: {source.relative_to(PAPER)}"
+            )
         if source.is_file() and source.suffix.lower() in SOURCE_SUFFIXES:
             destination = PACKAGE / source.relative_to(PAPER)
             destination.parent.mkdir(parents=True, exist_ok=True)
@@ -35,27 +55,35 @@ def copy_sources() -> None:
 
 
 def deterministic_archive(epoch: int) -> tuple[Path, str]:
+    """Create a byte-reproducible source archive and checksum."""
     archive = BUILD / "arxiv-source.tar.gz"
     archive.unlink(missing_ok=True)
-    with archive.open("wb") as raw:
-        with gzip.GzipFile(fileobj=raw, mode="wb", compresslevel=9, mtime=epoch) as compressed:
-            with tarfile.open(fileobj=compressed, mode="w") as tar:
-                for path in sorted(PACKAGE.rglob("*")):
-                    info = tar.gettarinfo(path, arcname=str(path.relative_to(PACKAGE)))
-                    info.mtime = epoch
-                    info.uid = info.gid = 0
-                    info.uname = info.gname = ""
-                    if path.is_file():
-                        with path.open("rb") as source:
-                            tar.addfile(info, source)
-                    else:
-                        tar.addfile(info)
+    with (
+        archive.open("wb") as raw,
+        gzip.GzipFile(
+            filename="", fileobj=raw, mode="wb", compresslevel=9, mtime=epoch
+        ) as compressed,
+        tarfile.open(fileobj=compressed, mode="w") as tar,
+    ):
+        for path in sorted(PACKAGE.rglob("*")):
+            relative = path.relative_to(PACKAGE)
+            info = tar.gettarinfo(path, arcname=str(relative))
+            info.mtime = epoch
+            info.uid = info.gid = 0
+            info.uname = info.gname = ""
+            info.mode = 0o644 if path.is_file() else 0o755
+            if path.is_file():
+                with path.open("rb") as source:
+                    tar.addfile(info, source)
+            else:
+                tar.addfile(info)
     digest = hashlib.sha256(archive.read_bytes()).hexdigest()
     (BUILD / "arxiv-source.tar.gz.sha256").write_text(f"{digest}  {archive.name}\n")
     return archive, digest
 
 
 def main() -> None:
+    """Build and report the non-submitting arXiv readiness package."""
     if "--clean" in sys.argv:
         shutil.rmtree(BUILD, ignore_errors=True)
         return

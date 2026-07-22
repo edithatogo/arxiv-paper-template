@@ -16,3 +16,14 @@ case-exact relative paths. Compile with errors treated as fatal.
 Cleaner and collector outputs are untrusted derived artifacts. An agent must
 diff them against canonical source, rebuild them, and report changes before a
 human chooses an upload package.
+
+Keep optional manuscript tooling isolated in `.venv-arxiv`; do not reuse an
+application or system environment. Preserve transformed-source diffs as review
+evidence. Changes to packaging, validation, or workflow contracts require
+standard-library regression tests and must keep deterministic archives
+byte-identical across repeated builds.
+
+Use Textstat output as editorial evidence, not as an automatic acceptance or
+rewrite threshold. Analyse text extracted from the canonical review PDF,
+retain the deterministic JSON report, respect each formula's sample-size
+limitations, and leave interpretation to human review.

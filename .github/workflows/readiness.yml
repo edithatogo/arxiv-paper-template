@@ -10,6 +10,7 @@ permissions: {}
 
 jobs:
   arxiv-texlive-matrix:
+    name: TeX Live ${{ matrix.texlive }}
     strategy:
       fail-fast: false
       matrix:
@@ -31,6 +32,7 @@ jobs:
             test -s ../build/texlive-${{ matrix.texlive }}/main.pdf
 
   readiness:
+    name: Source package and PDF assurance
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -40,18 +42,25 @@ jobs:
           submodules: recursive
           persist-credentials: false
       - uses: astral-sh/setup-uv@11f9893b081a58869d3b5fccaea48c9e9e46f990 # v8.3.2
+        with:
+          version: "0.11.29"
       - name: Install LaTeX and arXiv source tools
         run: sudo apt-get update && sudo apt-get install --yes chktex lacheck latexmk texlive-latex-base texlive-latex-extra qpdf poppler-utils exiftool
-      - name: Validate manifest
-        run: python3 scripts/validate_manifest.py
+      - name: Validate manuscript metadata, source, and regression contracts
+        run: |
+          python3 scripts/validate_manifest.py
+          python3 scripts/validate_arxiv.py paper
+          python3 -m unittest discover -s tests -v
       - name: Lint canonical LaTeX
         run: make latex-lint
       - name: Install pinned comparison tools
-        run: uv venv --allow-existing && uv pip sync requirements-arxiv.txt
+        run: make setup-tools
       - name: Build source package
         run: python3 scripts/build_submission.py
       - name: Audit review PDF and final LaTeX log
         run: python3 scripts/audit_pdf.py build/arxiv/main.pdf build/arxiv/main.log
+      - name: Record review-only readability evidence
+        run: make readability
       - name: Rebuild to prove deterministic packaging
         run: |
           cp build/arxiv/arxiv-source.tar.gz /tmp/arxiv-source-first.tar.gz
@@ -62,9 +71,12 @@ jobs:
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: arxiv-source-package
-          path: build/arxiv/
+          path: |
+            build/arxiv/
+            build/variants/
 
   semantic-html:
+    name: Semantic HTML assurance
     runs-on: ubuntu-latest
     permissions:
       contents: read

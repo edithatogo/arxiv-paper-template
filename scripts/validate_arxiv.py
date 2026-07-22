@@ -1,23 +1,32 @@
 #!/usr/bin/env python3
 """Fail-closed checks derived from arXiv's source-submission guidance."""
+
 from __future__ import annotations
 
+from pathlib import Path
 import re
 import sys
-from pathlib import Path
 
 ALLOWED_NAME = re.compile(r"^[A-Za-z0-9_+.,=-]+$")
 FORBIDDEN_SUFFIXES = {".aux", ".log", ".out", ".fls", ".fdb_latexmk", ".synctex.gz"}
-ABSOLUTE_PATH = re.compile(r"(?:/Users/|/home/|[A-Za-z]:\\)")
+ABSOLUTE_PATH = re.compile(r"(?:/Users/|/Volumes/|/home/|[A-Za-z]:\\)")
 
 
 def main() -> None:
+    """Validate a canonical or transformed arXiv source tree."""
     root = Path(sys.argv[1] if len(sys.argv) > 1 else "paper").resolve()
     errors: list[str] = []
     main_tex = root / "main.tex"
-    if not main_tex.exists() or "\\documentclass" not in main_tex.read_text(errors="replace"):
+    if not main_tex.exists() or "\\documentclass" not in main_tex.read_text(
+        errors="replace"
+    ):
         errors.append("main.tex must exist and contain \\documentclass")
     for path in root.rglob("*"):
+        if path.is_symlink():
+            errors.append(
+                f"symbolic links are not permitted in source: {path.relative_to(root)}"
+            )
+            continue
         if not path.is_file():
             continue
         relative = path.relative_to(root)

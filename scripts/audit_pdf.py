@@ -1,23 +1,31 @@
 #!/usr/bin/env python3
-"""Audit the review PDF and LaTeX log without treating the PDF as submission input."""
+"""Audit the review PDF and LaTeX log without treating the PDF as source."""
+
 from __future__ import annotations
 
+from pathlib import Path
 import re
+import shutil
 import subprocess
 import sys
-from pathlib import Path
 
 
 def capture(command: list[str]) -> str:
+    """Capture output from a required assurance command."""
     return subprocess.run(command, check=True, capture_output=True, text=True).stdout
 
 
 def main() -> None:
+    """Reject invalid PDFs, missing fonts, and unresolved LaTeX diagnostics."""
     pdf = Path(sys.argv[1])
     log = Path(sys.argv[2])
-    subprocess.run(["qpdf", "--check", str(pdf)], check=True)
-    info = capture(["pdfinfo", str(pdf)])
-    fonts = capture(["pdffonts", str(pdf)])
+    tools = {name: shutil.which(name) for name in ("qpdf", "pdfinfo", "pdffonts")}
+    missing = [name for name, path in tools.items() if path is None]
+    if missing:
+        raise SystemExit(f"missing required PDF audit tools: {', '.join(missing)}")
+    subprocess.run([str(tools["qpdf"]), "--check", str(pdf)], check=True)
+    info = capture([str(tools["pdfinfo"]), str(pdf)])
+    fonts = capture([str(tools["pdffonts"]), str(pdf)])
     errors: list[str] = []
     pages = re.search(r"^Pages:\s+(\d+)$", info, re.MULTILINE)
     if not pages or int(pages.group(1)) < 1:
@@ -43,7 +51,8 @@ def main() -> None:
             errors.append(label)
     if errors:
         raise SystemExit("\n".join(errors))
-    print(f"PDF audit: pass ({pages.group(1)} page(s), {len(font_rows)} embedded font(s))")
+    page_count = pages.group(1) if pages else "0"
+    print(f"PDF audit: pass ({page_count} page(s), {len(font_rows)} embedded font(s))")
 
 
 if __name__ == "__main__":

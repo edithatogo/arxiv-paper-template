@@ -30,7 +30,9 @@ The canonical outputs are:
 - `build/arxiv/main.pdf`, for review only;
 - `build/arxiv/arxiv-source.tar.gz`, the source package;
 - `build/arxiv/arxiv-source.tar.gz.sha256`, its checksum; and
-- `build/arxiv/readiness.json`, the non-submission evidence record.
+- `build/arxiv/readiness.json`, the non-submission evidence record; and
+- `build/arxiv/readability.json`, review-only Textstat evidence from the
+  canonical PDF.
 
 ## Independent preparation tools
 
@@ -38,7 +40,7 @@ Pinned optional tooling is isolated in `requirements-arxiv.txt`:
 
 ```console
 make setup-tools
-.venv/bin/python scripts/prepare_variants.py
+.venv-arxiv/bin/python scripts/prepare_variants.py
 ```
 
 This prepares independent outputs from
@@ -46,7 +48,8 @@ This prepares independent outputs from
 and [arxiv-collector](https://github.com/djsutherland/arxiv-collector). Review
 their diffs and compile their results before selecting an upload package:
 comment removal, flattening, image rewriting, and dependency collection can
-change semantics. [arXivIt](https://github.com/jaateixeira/arXivIt) informs the
+change semantics. The canonical readiness artifact retains the exact cleaner
+input/output diff and the validated variant trees for review. [arXivIt](https://github.com/jaateixeira/arXivIt) informs the
 built-in filename, figure, `.bbl`, hidden-file, and source checks but is not
 vendored: it is a small GPL tool without a packaged release. The
 [awesome-arxiv](https://github.com/artnitolog/awesome-arxiv) list is a useful
@@ -63,3 +66,28 @@ checks links, and uploads review
 artifacts. SourceRight and Authentext are pinned submodules for
 source-rights and claim/evidence work. Automation never chooses authorship,
 license, category, endorsement, or performs the authenticated arXiv upload.
+
+The Python preparation contracts have a dependency-free regression suite:
+
+```console
+make test
+```
+
+It exercises non-submission invariants, manifest validation, portable-path
+rejection, transformed-tree hygiene, and deterministic archive metadata.
+
+## Readability evidence
+
+After `make setup-tools`, generate the canonical PDF and a deterministic
+Textstat report with:
+
+```console
+make readability
+```
+
+The workflow extracts plain text from the review PDF with `pdftotext`, then
+records counts, estimated reading time, Flesch, Flesch--Kincaid, Fog,
+Coleman--Liau, ARI, Dale--Chall, Linsear Write, and consensus grade metrics.
+SMOG is omitted with an explicit warning when the manuscript has fewer than
+the 30 sentences required by its documented validation assumptions. These values
+are editorial signals, not universal scientific-quality thresholds.
