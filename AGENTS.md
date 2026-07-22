@@ -22,3 +22,8 @@ application or system environment. Preserve transformed-source diffs as review
 evidence. Changes to packaging, validation, or workflow contracts require
 standard-library regression tests and must keep deterministic archives
 byte-identical across repeated builds.
+
+Use Textstat output as editorial evidence, not as an automatic acceptance or
+rewrite threshold. Analyse text extracted from the canonical review PDF,
+retain the deterministic JSON report, respect each formula's sample-size
+limitations, and leave interpretation to human review.

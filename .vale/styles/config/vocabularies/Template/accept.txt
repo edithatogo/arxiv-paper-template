@@ -4,7 +4,10 @@ Authentext
 ChkTeX
 Lacheck
 LaTeXML
+Flesch
+Linsear
 Pandoc
+Textstat
 untrusted
 vendored
 Zizmor

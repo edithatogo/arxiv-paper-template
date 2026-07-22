@@ -54,13 +54,13 @@ jobs:
       - name: Lint canonical LaTeX
         run: make latex-lint
       - name: Install pinned comparison tools
-        run: |
-          uv venv .venv-arxiv
-          uv pip sync --python .venv-arxiv/bin/python requirements-arxiv.txt
+        run: make setup-tools
       - name: Build source package
         run: python3 scripts/build_submission.py
       - name: Audit review PDF and final LaTeX log
         run: python3 scripts/audit_pdf.py build/arxiv/main.pdf build/arxiv/main.log
+      - name: Record review-only readability evidence
+        run: make readability
       - name: Rebuild to prove deterministic packaging
         run: |
           cp build/arxiv/arxiv-source.tar.gz /tmp/arxiv-source-first.tar.gz

@@ -1,11 +1,12 @@
-.PHONY: setup setup-tools pdf arxiv-readiness arxiv-variants latex-lint pdf-audit test quality lint clean
+.PHONY: setup setup-tools pdf arxiv-readiness arxiv-variants readability latex-lint pdf-audit test quality lint clean
 
 setup:
 	git submodule update --init --recursive
 
 setup-tools:
-	uv venv .venv-arxiv
+	uv venv --allow-existing .venv-arxiv
 	uv pip sync --python .venv-arxiv/bin/python requirements-arxiv.txt
+	NLTK_DATA=.venv-arxiv/nltk_data .venv-arxiv/bin/python -m nltk.downloader -d .venv-arxiv/nltk_data cmudict
 
 pdf:
 	cd paper && latexmk -outdir=../build/arxiv main.tex
@@ -15,6 +16,9 @@ arxiv-readiness:
 
 arxiv-variants:
 	.venv-arxiv/bin/python scripts/prepare_variants.py
+
+readability: arxiv-readiness
+	NLTK_DATA=.venv-arxiv/nltk_data .venv-arxiv/bin/python scripts/audit_readability.py build/arxiv/main.pdf build/arxiv/readability.json
 
 latex-lint:
 	cd paper && chktex -q -v0 main.tex sections/*.tex

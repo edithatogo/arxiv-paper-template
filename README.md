@@ -30,7 +30,9 @@ The canonical outputs are:
 - `build/arxiv/main.pdf`, for review only;
 - `build/arxiv/arxiv-source.tar.gz`, the source package;
 - `build/arxiv/arxiv-source.tar.gz.sha256`, its checksum; and
-- `build/arxiv/readiness.json`, the non-submission evidence record.
+- `build/arxiv/readiness.json`, the non-submission evidence record; and
+- `build/arxiv/readability.json`, review-only Textstat evidence from the
+  canonical PDF.
 
 ## Independent preparation tools
 
@@ -73,3 +75,19 @@ make test
 
 It exercises non-submission invariants, manifest validation, portable-path
 rejection, transformed-tree hygiene, and deterministic archive metadata.
+
+## Readability evidence
+
+After `make setup-tools`, generate the canonical PDF and a deterministic
+Textstat report with:
+
+```console
+make readability
+```
+
+The workflow extracts plain text from the review PDF with `pdftotext`, then
+records counts, estimated reading time, Flesch, Flesch--Kincaid, Fog,
+Coleman--Liau, ARI, Dale--Chall, Linsear Write, and consensus grade metrics.
+SMOG is omitted with an explicit warning when the manuscript has fewer than
+the 30 sentences required by its documented validation assumptions. These values
+are editorial signals, not universal scientific-quality thresholds.

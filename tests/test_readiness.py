@@ -30,8 +30,11 @@ def load_script(name: str):
 class ReadinessContractTests(unittest.TestCase):
     def test_pipeline_is_latex_first_non_submitting_and_hermetic(self) -> None:
         workflow = (ROOT / ".github/workflows/readiness.yml").read_text()
+        makefile = (ROOT / "Makefile").read_text()
         manifest = (ROOT / "paper/readiness-manifest.json").read_text()
         builder = (ROOT / "scripts/build_submission.py").read_text()
+        readability = (ROOT / "scripts/audit_readability.py").read_text()
+        requirements = (ROOT / "requirements-arxiv.txt").read_text()
         main_tex = (ROOT / "paper/main.tex").read_text()
 
         self.assertIn("\\documentclass", main_tex)
@@ -40,11 +43,33 @@ class ReadinessContractTests(unittest.TestCase):
         self.assertIn("permissions: {}", workflow)
         self.assertIn("texlive: [2023, 2025]", workflow)
         self.assertIn('version: "0.11.29"', workflow)
-        self.assertIn(".venv-arxiv", workflow)
+        self.assertIn(".venv-arxiv", makefile)
+        self.assertIn("make setup-tools", workflow)
         self.assertIn("build/variants/", workflow)
+        self.assertIn("make readability", workflow)
+        self.assertIn("audit_readability.py", makefile)
+        self.assertIn("textstat==0.7.13", requirements)
+        self.assertIn("nltk==3.10.0", requirements)
+        self.assertIn("pyphen==0.17.2", requirements)
+        self.assertIn("defusedxml==0.7.1", requirements)
+        self.assertIn('"status": "review_only"', readability)
+        self.assertIn("fewer than 30 sentences", readability)
+        self.assertIn("nltk.data.find", readability)
+        self.assertNotIn("nltk.download", readability)
+        self.assertIn("nltk.downloader", makefile)
         self.assertIn("submission_performed", builder)
         self.assertNotIn("pandoc", builder)
         self.assertNotIn("arxiv.org", builder)
+
+    def test_readability_normalization_joins_line_break_hyphenation(self) -> None:
+        readability = load_script("audit_readability")
+        normalized = readability.normalize_text(
+            "A reproducible inter-\nnational manuscript.\n\nSecond sentence."
+        )
+        self.assertEqual(
+            normalized,
+            "A reproducible international manuscript. Second sentence.",
+        )
 
     def test_manifest_validation_cannot_be_optimized_away(self) -> None:
         validator = load_script("validate_manifest")
