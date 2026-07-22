@@ -22,3 +22,4 @@ jobs:
         with:
           args: "--no-progress README.md paper"
           fail: true
+          failIfEmpty: false
