@@ -38,7 +38,7 @@ Pinned optional tooling is isolated in `requirements-arxiv.txt`:
 
 ```console
 make setup-tools
-.venv/bin/python scripts/prepare_variants.py
+.venv-arxiv/bin/python scripts/prepare_variants.py
 ```
 
 This prepares independent outputs from
@@ -46,7 +46,8 @@ This prepares independent outputs from
 and [arxiv-collector](https://github.com/djsutherland/arxiv-collector). Review
 their diffs and compile their results before selecting an upload package:
 comment removal, flattening, image rewriting, and dependency collection can
-change semantics. [arXivIt](https://github.com/jaateixeira/arXivIt) informs the
+change semantics. The canonical readiness artifact retains the exact cleaner
+input/output diff and the validated variant trees for review. [arXivIt](https://github.com/jaateixeira/arXivIt) informs the
 built-in filename, figure, `.bbl`, hidden-file, and source checks but is not
 vendored: it is a small GPL tool without a packaged release. The
 [awesome-arxiv](https://github.com/artnitolog/awesome-arxiv) list is a useful
@@ -63,3 +64,12 @@ checks links, and uploads review
 artifacts. SourceRight and Authentext are pinned submodules for
 source-rights and claim/evidence work. Automation never chooses authorship,
 license, category, endorsement, or performs the authenticated arXiv upload.
+
+The Python preparation contracts have a dependency-free regression suite:
+
+```console
+make test
+```
+
+It exercises non-submission invariants, manifest validation, portable-path
+rejection, transformed-tree hygiene, and deterministic archive metadata.

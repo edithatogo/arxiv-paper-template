@@ -1,4 +1,5 @@
 .venv/
+.venv-arxiv/
 build/
 __pycache__/
 .sourceright/
