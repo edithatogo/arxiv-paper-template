@@ -9,6 +9,27 @@ on:
 permissions: {}
 
 jobs:
+  arxiv-texlive-matrix:
+    strategy:
+      fail-fast: false
+      matrix:
+        texlive: [2023, 2025]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          persist-credentials: false
+      - uses: xu-cheng/texlive-action@f06d1919d338773df02f5c09d9dd069e7105eff7 # v3
+        with:
+          texlive_version: ${{ matrix.texlive }}
+          run: |
+            mkdir -p build/texlive-${{ matrix.texlive }}
+            cd paper
+            latexmk -outdir=../build/texlive-${{ matrix.texlive }} main.tex
+            test -s ../build/texlive-${{ matrix.texlive }}/main.pdf
+
   readiness:
     runs-on: ubuntu-latest
     permissions:
@@ -20,13 +41,17 @@ jobs:
           persist-credentials: false
       - uses: astral-sh/setup-uv@11f9893b081a58869d3b5fccaea48c9e9e46f990 # v8.3.2
       - name: Install LaTeX and arXiv source tools
-        run: sudo apt-get update && sudo apt-get install --yes latexmk texlive-latex-base texlive-latex-extra qpdf poppler-utils exiftool
+        run: sudo apt-get update && sudo apt-get install --yes chktex lacheck latexmk texlive-latex-base texlive-latex-extra qpdf poppler-utils exiftool
       - name: Validate manifest
         run: python3 scripts/validate_manifest.py
+      - name: Lint canonical LaTeX
+        run: make latex-lint
       - name: Install pinned comparison tools
         run: uv venv --allow-existing && uv pip sync requirements-arxiv.txt
       - name: Build source package
         run: python3 scripts/build_submission.py
+      - name: Audit review PDF and final LaTeX log
+        run: python3 scripts/audit_pdf.py build/arxiv/main.pdf build/arxiv/main.log
       - name: Rebuild to prove deterministic packaging
         run: |
           cp build/arxiv/arxiv-source.tar.gz /tmp/arxiv-source-first.tar.gz
@@ -38,3 +63,22 @@ jobs:
         with:
           name: arxiv-source-package
           path: build/arxiv/
+
+  semantic-html:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          persist-credentials: false
+      - name: Install LaTeXML
+        run: sudo apt-get update && sudo apt-get install --yes latexml texlive-latex-base texlive-latex-extra
+      - name: Convert canonical source to semantic HTML
+        run: mkdir -p build/html && cd paper && latexmlc --dest=../build/html/main.html --log=../build/html/main.latexml.log --format=html5 --strict main.tex
+      - name: Validate semantic HTML
+        run: python3 scripts/validate_html.py build/html/main.html
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: semantic-html-preview
+          path: build/html/

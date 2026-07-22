@@ -1,6 +1,9 @@
 arXiv
 arXiv's
 Authentext
+ChkTeX
+Lacheck
+LaTeXML
 Pandoc
 untrusted
 vendored

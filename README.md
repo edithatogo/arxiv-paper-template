@@ -55,7 +55,11 @@ discovery catalogue, not a build dependency.
 ## Guardrails
 
 CI compiles the canonical LaTeX, validates the package, rebuilds it to prove
-byte-for-byte reproducibility, scans workflows with Zizmor, checks links, and
-uploads review artifacts. SourceRight and Authentext are pinned submodules for
+byte-for-byte reproducibility, runs ChkTeX and Lacheck, audits PDF integrity and
+font embedding, and independently converts the source to semantic HTML with
+LaTeXML. A pinned matrix compiles against both TeX Live 2023 and 2025, the two
+versions currently supported by arXiv. CI also scans workflows with Zizmor,
+checks links, and uploads review
+artifacts. SourceRight and Authentext are pinned submodules for
 source-rights and claim/evidence work. Automation never chooses authorship,
 license, category, endorsement, or performs the authenticated arXiv upload.

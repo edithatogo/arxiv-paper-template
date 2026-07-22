@@ -24,6 +24,15 @@ def rebuild_and_validate(source: Path, build: Path) -> None:
         command.extend(["-r", str(PAPER / "latexmkrc")])
     command.extend([f"-outdir={build}", "main.tex"])
     run(command, source)
+    run(
+        [
+            str(ROOT / ".venv" / "bin" / "python"),
+            str(ROOT / "scripts" / "audit_pdf.py"),
+            str(build / "main.pdf"),
+            str(build / "main.log"),
+        ],
+        ROOT,
+    )
     run([str(ROOT / ".venv" / "bin" / "python"), str(ROOT / "scripts" / "validate_arxiv.py"), str(source)], ROOT)
 
 

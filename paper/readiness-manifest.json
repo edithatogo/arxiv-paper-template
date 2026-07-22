@@ -1,6 +1,7 @@
 {
   "schema_version": "arxiv-paper-template.readiness.v2",
   "canonical_source": "paper/main.tex",
+  "arxiv_texlive_matrix": [2023, 2025],
   "required_tools": ["pdflatex", "latexmk"],
   "optional_tools": ["arxiv-latex-cleaner", "arxiv-collector", "latexpand", "qpdf", "pdfinfo", "exiftool", "gitleaks", "lychee", "vale", "latexml"],
   "source_provenance": {"sourceright": "submodule", "authentext": "submodule"},
