@@ -8,20 +8,24 @@ on:
 
 permissions: {}
 
+concurrency:
+  group: manuscript-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   arxiv-texlive-matrix:
     strategy:
       fail-fast: false
       matrix:
-        texlive: [2023, 2025]
+        texlive: [2024, 2026]
     runs-on: ubuntu-latest
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: xu-cheng/texlive-action@f06d1919d338773df02f5c09d9dd069e7105eff7 # v3
+      - uses: xu-cheng/texlive-action@22c04326a5d855880f9d39bb955138bf11c6df80 # v3
         with:
           texlive_version: ${{ matrix.texlive }}
           run: |
@@ -35,11 +39,11 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           submodules: recursive
           persist-credentials: false
-      - uses: astral-sh/setup-uv@11f9893b081a58869d3b5fccaea48c9e9e46f990 # v8.3.2
+      - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
       - name: Install LaTeX and arXiv source tools
         run: sudo apt-get update && sudo apt-get install --yes chktex lacheck latexmk texlive-latex-base texlive-latex-extra qpdf poppler-utils exiftool
       - name: Validate manifest
@@ -69,7 +73,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - name: Install LaTeXML
