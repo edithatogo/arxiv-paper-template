@@ -1,0 +1,8 @@
+cff-version: 1.2.0
+message: If you use this work, please cite it using these metadata and identify the
+  commit or release used.
+title: arXiv LaTeX template
+authors:
+- name: arxiv-paper-template project
+repository-code: https://github.com/edithatogo/arxiv-paper-template
+url: https://github.com/edithatogo/arxiv-paper-template
